@@ -45,7 +45,7 @@
         .video-wrapper { background: var(--card-bg); padding: 15px; border-radius: 20px; text-align: center; }
         .video-wrapper img { width: 100%; border-radius: 12px; }
 
-        /* ========== PARKING MAP ========== */
+    
         .parking-lot-wrapper {
             background: var(--card-bg);
             border-radius: 20px;
@@ -54,7 +54,7 @@
             box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
 
-        /* Map header */
+       
         .map-header {
             display: flex;
             justify-content: space-between;
@@ -69,15 +69,7 @@
         .legend-dot.reserved { background: #555; }
         .legend-dot.occupied { background: var(--red); }
 
-        /* ── MAIN PARKING LOT GRID ─────────────────────────────────────────
-           Layout (4 columns × 3 rows):
-             col1 = left panel (cam / entrance / gate)   ~80px
-             col2-4 = parking spot columns (equal)
-
-             row1 = top  (cam cell  + P4 P5 P6)
-             row2 = road (entrance lane full-width)
-             row3 = bottom (gate cell + P1 P2 P3)
-        ─────────────────────────────────────────────────────────────────── */
+  
         .parking-lot {
             display: grid;
             grid-template-columns: 80px 1fr 1fr 1fr;
@@ -86,11 +78,11 @@
             border-radius: 14px;
             overflow: hidden;
             border: 2px solid #2a2a2a;
-            max-width: 520px;   /* keeps it compact on desktop too */
+            max-width: 520px;   
             margin: 0 auto;
         }
 
-        /* ── Left panel cells ── */
+   
         .left-cell {
             background: #141414;
             display: flex;
@@ -99,7 +91,6 @@
             border-right: 2px solid #2a2a2a;
         }
 
-        /* Camera cell – top-left */
         .cam-cell {
             grid-column: 1;
             grid-row: 1;
@@ -128,7 +119,7 @@
         .cam-icon svg { width: 28px; height: 28px; }
         .cam-icon .cam-label { font-size: 0.6rem; font-weight: 800; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; }
 
-        /* Gate cell – bottom-left */
+  
         .gate-cell {
             grid-column: 1;
             grid-row: 3;
@@ -139,16 +130,15 @@
             position: relative;
         }
 
-        /* Road entrance cell – middle-left */
         .road-left-cell {
             grid-column: 1;
             grid-row: 2;
             background: #1c1c1c;
             border-right: 2px solid #2a2a2a;
             position: relative;
-            /* entry opening at top & bottom of this cell */
+            
         }
-        /* Opening notch (no border top/bottom for left cell during road) */
+        
         .road-left-cell::after {
             content: '';
             position: absolute;
@@ -157,7 +147,7 @@
             border-bottom: 1px dashed #333;
         }
 
-        /* ── Top spots zone (P4 P5 P6) ── */
+        
         .top-spots-zone {
             grid-column: 2 / 5;
             grid-row: 1;
@@ -168,7 +158,7 @@
             border-left: none;
         }
 
-        /* ── Road lane (spans all 4 columns) ── */
+       
         .road-lane {
             grid-column: 1 / 5;
             grid-row: 2;
@@ -177,7 +167,7 @@
             border-top: 1px dashed #333;
             border-bottom: 1px dashed #333;
         }
-        /* Dashed center line – starts after the left-cell divider */
+       
         .road-lane::before {
             content: '';
             position: absolute;
@@ -190,7 +180,7 @@
             transform: translateY(-50%);
             pointer-events: none;
         }
-        /* Left-side border divider inside road lane */
+        
         .road-lane::after {
             content: '';
             position: absolute;
@@ -200,7 +190,7 @@
             background: #2a2a2a;
         }
 
-        /* ── Bottom spots zone (P1 P2 P3) ── */
+       
         .bottom-spots-zone {
             grid-column: 2 / 5;
             grid-row: 3;
@@ -210,7 +200,7 @@
             background: #141414;
         }
 
-        /* ── Individual parking spot ── */
+       
         .pspot {
             flex: 1;
             min-width: 0;
@@ -229,7 +219,7 @@
             user-select: none;
         }
 
-        /* Top spots – open toward road (no bottom border, flat bottom) */
+      
         .top-spots-zone .pspot {
             border-bottom: none;
             border-radius: 8px 8px 0 0;
@@ -244,7 +234,7 @@
             border-radius: 2px;
         }
 
-        /* Bottom spots – open toward road (no top border, flat top) */
+    
         .bottom-spots-zone .pspot {
             border-top: none;
             border-radius: 0 0 8px 8px;
@@ -268,15 +258,15 @@
         .pspot .spot-label  { font-size: 1.1rem; font-weight: 900; line-height: 1; }
         .pspot .spot-status { font-size: 0.52rem; font-weight: 700; margin-top: 5px; letter-spacing: 0.06em; opacity: 0.85; }
 
-        /* ── GATE (inside gate-cell, bottom-left) ── */
+ 
         .gate-inner {
             display: flex;
             flex-direction: column;
-            align-items: flex-start;   /* flush to left */
+            align-items: flex-start;  
             justify-content: flex-start;
             gap: 0;
             width: 100%;
-            padding: 6px 0 0 8px;      /* push to left wall */
+            padding: 6px 0 0 8px;      
             box-sizing: border-box;
             position: relative;
         }
@@ -314,7 +304,7 @@
         .gate-bar-wrap {
             position: absolute;
             top: 5px;
-            left: 13px;               /* starts right at edge of post */
+            left: 13px;               
             transform-origin: left center;
             transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
             transform: rotate(0deg);
@@ -323,7 +313,7 @@
         .gate-bar-wrap.open { transform: rotate(-82deg); }
 
         .gate-bar {
-            width: 48px;              /* stays within left cell */
+            width: 48px;            
             height: 7px;
             background: repeating-linear-gradient(90deg, #ff5e00 0px, #ff5e00 10px, #ffca28 10px, #ffca28 16px);
             border-radius: 0 4px 4px 0;
@@ -345,7 +335,7 @@
 
         .parking-lot-outer { position: relative; }
 
-        /* ===== ADMIN TABLES & LISTS ===== */
+   
         .plate-input { width: 70%; padding: 12px; border-radius: 50px; border: none; background: #000; color: white; text-transform: uppercase; }
         .plate-item { display: flex; justify-content: space-between; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; margin-bottom: 10px;}
         .remove-btn { background: rgba(255, 59, 48, 0.2); color: var(--red); border: none; padding: 5px 15px; border-radius: 50px; cursor: pointer; }
@@ -354,7 +344,7 @@
         th, td { border-bottom: 1px solid #333; padding: 10px; text-align: left; font-size: 0.9rem;}
         .btn-small { padding: 5px 10px; background: #333; color: white; border: none; border-radius: 5px; cursor: pointer;}
 
-        /* SWIPEABLE ADMIN MENU */
+     
         .admin-nav { display: flex; justify-content: center; border-bottom: 2px solid #333; margin-bottom: 20px;}
         .admin-nav div { flex: 1; text-align: center; padding: 15px; color: var(--text-muted); font-weight: bold; cursor: pointer; transition: 0.3s; }
         .admin-nav div.active { color: var(--accent); border-bottom: 3px solid var(--accent); }
@@ -362,7 +352,7 @@
         .swipe-container { display: flex; width: 200%; transition: transform 0.3s ease-out; }
         .swipe-section { width: 50%; padding: 0 10px; box-sizing: border-box; }
 
-        /* MODALS */
+     
         .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center;}
         .modal-box { background: #1a1a1a; padding: 30px; border-radius: 20px; width: 90%; max-width: 350px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
         .modal-input { width: 90%; padding: 12px; margin: 10px 0; background: #000; color: white; border: 1px solid #333; border-radius: 10px; }
@@ -391,7 +381,7 @@
 
     <div class="content">
         
-        <!-- ======== CAMERA TAB (unchanged) ======== -->
+     
         <div id="cameraTab" class="tab-content active-tab">
             <div class="dashboard-card">
                 <div class="info-group">
@@ -407,7 +397,7 @@
             </div>
         </div>
 
-        <!-- ======== PARKING MAP TAB ======== -->
+       
         <div id="mapTab" class="tab-content">
             <div class="parking-lot-wrapper">
 
@@ -423,7 +413,7 @@
                 <div class="parking-lot-outer">
                     <div class="parking-lot">
 
-                        <!-- ── CAMERA CELL (top-left, to the left of P4) ── -->
+                   
                         <div class="left-cell cam-cell">
                             <div class="cam-icon" onclick="switchTab('cameraTab', 'nav-camera')" title="View Live Camera">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="#ff5e00" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -434,7 +424,6 @@
                             </div>
                         </div>
 
-                        <!-- ── TOP SPOTS: P4 P5 P6 ── -->
                         <div class="top-spots-zone">
                             <div id="spot-4" class="pspot free" onclick="openReservation(4)">
                                 <div class="spot-label">P4</div>
@@ -450,10 +439,9 @@
                             </div>
                         </div>
 
-                        <!-- ── ROAD LANE (full width, spans all 4 columns) ── -->
+            
                         <div class="road-lane"></div>
 
-                        <!-- ── GATE CELL (bottom-left, to the left of P1) ── -->
                         <div class="left-cell gate-cell">
                             <div class="gate-inner {% if role == 'admin' %}admin-gate{% endif %}"
                                  id="gateVisual"
@@ -470,7 +458,7 @@
                             </div>
                         </div>
 
-                        <!-- ── BOTTOM SPOTS: P1 P2 P3 ── -->
+               
                         <div class="bottom-spots-zone">
                             <div id="spot-1" class="pspot free" onclick="openReservation(1)">
                                 <div class="spot-label">P1</div>
@@ -486,12 +474,12 @@
                             </div>
                         </div>
 
-                    </div><!-- /.parking-lot -->
-                </div><!-- /.parking-lot-outer -->
-            </div><!-- /.parking-lot-wrapper -->
+                    </div>
+                </div>
+            </div>
         </div>
         
-        <!-- ======== ADMIN TAB ======== -->
+
         {% if role == 'admin' %}
         <div id="adminTab" class="tab-content">
             <div class="dashboard-card" style="padding: 10px; display: block; overflow: hidden;">
@@ -534,7 +522,7 @@
 
     </div>
 
-    <!-- Reservation Modal -->
+   
     <div id="resModal" class="modal-overlay">
         <div class="modal-box">
             <h2 style="margin-top:0;">Reserve Spot P<span id="resSpotNum"></span></h2>
@@ -571,7 +559,7 @@
             if (sidebarOpen) toggleSidebar();
         }
 
-        // --- ADMIN SWIPE LOGIC ---
+
         let currentSlide = 0;
         const swipeArea = document.getElementById('swipeArea');
         
@@ -592,7 +580,7 @@
             });
         }
 
-        // --- RESERVATION MODAL ---
+       
         let selectedSpot = 0;
         function openReservation(spotNum) {
             const spotEl = document.getElementById('spot-' + spotNum);
@@ -624,7 +612,7 @@
             });
         }
 
-        // --- GATE CONTROLS ---
+
         function triggerManualGate() {
             let btn = document.getElementById("gateButton");
             btn.innerText = "Opening..."; btn.disabled = true;
@@ -638,7 +626,7 @@
             fetch('/toggle_gate', { method: 'POST' });
         }
 
-        // --- UPDATE GATE VISUAL ---
+
         function updateGateVisual(isOpen) {
             const barWrap = document.getElementById('gateBarWrap');
             const badge   = document.getElementById('gateBadge');
@@ -655,7 +643,7 @@
             }
         }
 
-        // --- FETCH PLATES ---
+   
         function fetchPlates() {
             if (userRole !== 'admin') return;
             fetch('/api/plates').then(r => r.json()).then(data => {
@@ -683,37 +671,36 @@
             fetch('/api/toggle_role/' + userId, { method: 'POST' }).then(() => location.reload());
         }
 
-        // --- LIVE STATUS POLLING ---
+  
         function fetchLiveStatus() {
             fetch('/api/status').then(r => r.json()).then(data => {
-                // Update camera tab status
+          
                 document.getElementById('val-plate').innerText = data.plate;
                 let gateEl = document.getElementById('val-gate');
                 gateEl.innerText = data.gate;
                 gateEl.className = data.gate === 'OPEN' ? 'status-green' : 'status-red';
 
-                // Update gate visual in map
+               
                 updateGateVisual(data.gate === 'OPEN');
 
-                // Update each parking spot: sensor(0)=occupied(red), reserved(r)=gray, free(1)=green
                 for (let i = 1; i <= 6; i++) {
                     const spotEl   = document.getElementById('spot-' + i);
                     const statusEl = document.getElementById('status-' + i);
-                    const sensorFree = data['s' + i] === 1;   // 1 = no car (PUD_UP)
+                    const sensorFree = data['s' + i] === 1;  
                     const isReserved = data['r' + i] === true;
 
                     if (!sensorFree) {
-                        // Car physically present → RED
+                      
                         spotEl.className = 'pspot occupied';
                         spotEl.onclick   = null;
                         if (statusEl) statusEl.textContent = 'FULL';
                     } else if (isReserved) {
-                        // Spot reserved → GRAY
+                       
                         spotEl.className = 'pspot reserved';
                         spotEl.onclick   = null;
                         if (statusEl) statusEl.textContent = 'RESERVED';
                     } else {
-                        // Free → GREEN
+                      
                         spotEl.className = 'pspot free';
                         spotEl.onclick   = () => openReservation(i);
                         if (statusEl) statusEl.textContent = 'FREE';
