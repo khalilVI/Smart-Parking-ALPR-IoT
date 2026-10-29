@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Parking Dashboard</title>
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0a0a0a">
+    
+    <style>
+        :root {
+            --bg-dark: #0a0a0a; --card-bg: rgba(25, 25, 25, 0.8);
+            --text-main: #ffffff; --text-muted: #a0a0a0;
+            --accent: #ff5e00; --gradient: linear-gradient(90deg, #ff5e00 0%, #ff2a00 100%);
+            --green: #00e676; --red: #ff3b30; --gray: #555555;
+        }
+        
+        body { font-family: -apple-system, sans-serif; margin: 0; background-color: var(--bg-dark); color: var(--text-main); overflow-x: hidden; }
+        
+        .header { padding: 20px 25px; font-size: 1.4rem; font-weight: 800; display: flex; align-items: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid rgba(255,255,255,0.05); background: var(--bg-dark);}
+        .menu-btn { cursor: pointer; margin-right: 20px; background: none; border: none; color: white; display: flex; align-items: center; padding: 0;}
+        .menu-btn svg { width: 28px; height: 28px; }
+
+        .sidebar { height: 100%; width: 0; position: fixed; z-index: 1001; top: 0; left: 0; background-color: #111111; overflow-x: hidden; transition: 0.4s; padding-top: 80px; box-shadow: 5px 0 25px rgba(0,0,0,0.8);}
+        .sidebar a { padding: 15px 35px; text-decoration: none; font-size: 1.2rem; font-weight: 600; color: var(--text-muted); display: block; transition: 0.3s; cursor: pointer;}
+        .sidebar a:hover, .sidebar a.active { color: white; background-color: #1a1a1a; border-left: 4px solid var(--accent); }
+        .close-btn { position: absolute; top: 20px; right: 25px; font-size: 2rem; background: none; border: none; color: white; cursor: pointer;}
+
+        .content { padding: 20px; max-width: 900px; margin: auto; }
+        .dashboard-card { background: var(--card-bg); border-radius: 20px; padding: 25px 30px; margin-bottom: 30px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05);}
+        .info-group { display: flex; flex-direction: column; gap: 12px; flex: 1; }
+        .info-row { display: flex; justify-content: space-between; max-width: 300px; color: var(--text-muted); font-weight: 500;}
+        .info-row span { font-weight: 700; color: white; text-align: right;}
+        
+        .status-red { color: var(--red) !important; }
+        .status-green { color: var(--green) !important; }
+        .status-yellow { color: #ffca28 !important; }
+        
+        .gate-btn { background: var(--gradient); color: white; border: none; padding: 14px 28px; font-weight: 700; border-radius: 50px; cursor: pointer; margin-top: 15px; width: 100%;}
+        
+        .tab-content { display: none; animation: fadeUp 0.4s forwards; opacity: 0; }
+        .active-tab { display: block; }
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+        .video-wrapper { background: var(--card-bg); padding: 15px; border-radius: 20px; text-align: center; }
+        .video-wrapper img { width: 100%; border-radius: 12px; }
+
+        /* ========== PARKING MAP ========== */
+        .parking-lot-wrapper {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        /* Map header */
+        .map-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        .map-header h2 { margin: 0; font-size: 1.1rem; font-weight: 800; }
+        .map-legend { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.7rem; color: #888; font-weight: 600; }
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .legend-dot.free { background: var(--green); }
+        .legend-dot.reserved { background: #555; }
+        .legend-dot.occupied { background: var(--red); }
+
+        /* ── MAIN PARKING LOT GRID ─────────────────────────────────────────
+           Layout (4 columns × 3 rows):
+             col1 = left panel (cam / entrance / gate)   ~80px
+             col2-4 = parking spot columns (equal)
+
+             row1 = top  (cam cell  + P4 P5 P6)
+             row2 = road (entrance lane full-width)
+             row3 = bottom (gate cell + P1 P2 P3)
+        ─────────────────────────────────────────────────────────────────── */
+        .parking-lot {
+            display: grid;
+            grid-template-columns: 80px 1fr 1fr 1fr;
+            grid-template-rows: auto 76px auto;
+            background: #141414;
+            border-radius: 14px;
+            overflow: hidden;
+            border: 2px solid #2a2a2a;
+            max-width: 520px;   /* keeps it compact on desktop too */
+            margin: 0 auto;
+        }
+
+        /* ── Left panel cells ── */
+        .left-cell {
+            background: #141414;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-right: 2px solid #2a2a2a;
+        }
+
+        /* Camera cell – top-left */
+        .cam-cell {
+            grid-column: 1;
+            grid-row: 1;
+            padding: 10px 8px;
+            align-items: center;
+            justify-content: center;
+            border-bottom: none;
+        }
+
+        .cam-icon {
+            background: rgba(255,94,0,0.08);
+            border: 1.5px solid rgba(255,94,0,0.35);
+            border-radius: 12px;
+            padding: 10px 8px 8px;
+            cursor: pointer;
+            transition: all 0.25s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .cam-icon:hover { background: rgba(255,94,0,0.22); border-color: var(--accent); transform: scale(1.04); }
+        .cam-icon:active { transform: scale(0.96); }
+        .cam-icon svg { width: 28px; height: 28px; }
+        .cam-icon .cam-label { font-size: 0.6rem; font-weight: 800; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; }
+
+        /* Gate cell – bottom-left */
+        .gate-cell {
+            grid-column: 1;
+            grid-row: 3;
+            padding: 10px 8px;
+            align-items: center;
+            justify-content: center;
+            border-top: none;
+            position: relative;
+        }
+
+        /* Road entrance cell – middle-left */
+        .road-left-cell {
+            grid-column: 1;
+            grid-row: 2;
+            background: #1c1c1c;
+            border-right: 2px solid #2a2a2a;
+            position: relative;
+            /* entry opening at top & bottom of this cell */
+        }
+        /* Opening notch (no border top/bottom for left cell during road) */
+        .road-left-cell::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-top: 1px dashed #333;
+            border-bottom: 1px dashed #333;
+        }
+
+        /* ── Top spots zone (P4 P5 P6) ── */
+        .top-spots-zone {
+            grid-column: 2 / 5;
+            grid-row: 1;
+            display: flex;
+            gap: 6px;
+            padding: 10px 12px 0;
+            background: #141414;
+            border-left: none;
+        }
+
+        /* ── Road lane (spans all 4 columns) ── */
+        .road-lane {
+            grid-column: 1 / 5;
+            grid-row: 2;
+            background: #1c1c1c;
+            position: relative;
+            border-top: 1px dashed #333;
+            border-bottom: 1px dashed #333;
+        }
+        /* Dashed center line – starts after the left-cell divider */
+        .road-lane::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 88px;
+            right: 16px;
+            height: 2px;
+            background: repeating-linear-gradient(90deg, #ffca28 0px, #ffca28 18px, transparent 18px, transparent 36px);
+            opacity: 0.28;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+        /* Left-side border divider inside road lane */
+        .road-lane::after {
+            content: '';
+            position: absolute;
+            left: 80px;
+            top: 0; bottom: 0;
+            width: 2px;
+            background: #2a2a2a;
+        }
+
+        /* ── Bottom spots zone (P1 P2 P3) ── */
+        .bottom-spots-zone {
+            grid-column: 2 / 5;
+            grid-row: 3;
+            display: flex;
+            gap: 6px;
+            padding: 0 12px 10px;
+            background: #141414;
+        }
+
+        /* ── Individual parking spot ── */
+        .pspot {
+            flex: 1;
+            min-width: 0;
+            aspect-ratio: 0.55;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-weight: 900;
+            font-size: 1rem;
+            border: 2px solid;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            user-select: none;
+        }
+
+        /* Top spots – open toward road (no bottom border, flat bottom) */
+        .top-spots-zone .pspot {
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+        }
+        .top-spots-zone .pspot::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 6px; right: 6px;
+            height: 3px;
+            background: currentColor;
+            opacity: 0.25;
+            border-radius: 2px;
+        }
+
+        /* Bottom spots – open toward road (no top border, flat top) */
+        .bottom-spots-zone .pspot {
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+        }
+        .bottom-spots-zone .pspot::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 6px; right: 6px;
+            height: 3px;
+            background: currentColor;
+            opacity: 0.25;
+            border-radius: 2px;
+        }
+
+        .pspot.free  { background-color: rgba(0,230,118,0.12); color: var(--green); border-color: var(--green); }
+        .pspot.free:hover  { background-color: rgba(0,230,118,0.25); transform: scaleY(1.02); }
+        .pspot.free:active { transform: scaleY(0.97); }
+        .pspot.reserved { background-color: rgba(80,80,80,0.2); color: #555; border-color: #3a3a3a; cursor: not-allowed; }
+        .pspot.occupied { background-color: rgba(255,59,48,0.15); color: var(--red); border-color: var(--red); cursor: not-allowed; }
+
+        .pspot .spot-label  { font-size: 1.1rem; font-weight: 900; line-height: 1; }
+        .pspot .spot-status { font-size: 0.52rem; font-weight: 700; margin-top: 5px; letter-spacing: 0.06em; opacity: 0.85; }
+
+        /* ── GATE (inside gate-cell, bottom-left) ── */
+        .gate-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;   /* flush to left */
+            justify-content: flex-start;
+            gap: 0;
+            width: 100%;
+            padding: 6px 0 0 8px;      /* push to left wall */
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .gate-status-badge {
+            font-size: 0.44rem;
+            font-weight: 900;
+            letter-spacing: 0.1em;
+            padding: 2px 5px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        .gate-status-badge.open   { background: rgba(0,230,118,0.2);  color: var(--green); }
+        .gate-status-badge.closed { background: rgba(255,59,48,0.15); color: var(--red); }
+
+        .gate-post-wrap {
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .gate-post {
+            width: 13px;
+            height: 34px;
+            background: linear-gradient(180deg, #777 0%, #444 100%);
+            border-radius: 4px 4px 2px 2px;
+            border: 1px solid #888;
+            position: relative;
+            z-index: 2;
+            flex-shrink: 0;
+        }
+
+        .gate-bar-wrap {
+            position: absolute;
+            top: 5px;
+            left: 13px;               /* starts right at edge of post */
+            transform-origin: left center;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: rotate(0deg);
+            z-index: 1;
+        }
+        .gate-bar-wrap.open { transform: rotate(-82deg); }
+
+        .gate-bar {
+            width: 48px;              /* stays within left cell */
+            height: 7px;
+            background: repeating-linear-gradient(90deg, #ff5e00 0px, #ff5e00 10px, #ffca28 10px, #ffca28 16px);
+            border-radius: 0 4px 4px 0;
+            box-shadow: 0 2px 8px rgba(255,94,0,0.45);
+        }
+
+        .gate-text-label {
+            font-size: 0.52rem;
+            font-weight: 800;
+            color: #666;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-top: 7px;
+        }
+
+        .gate-inner.admin-gate { cursor: pointer; }
+        .gate-inner.admin-gate:hover .gate-post { background: linear-gradient(180deg, #999 0%, #666 100%); }
+        .gate-inner.admin-gate:hover .gate-bar  { box-shadow: 0 2px 16px rgba(255,94,0,0.8); }
+
+        .parking-lot-outer { position: relative; }
+
+        /* ===== ADMIN TABLES & LISTS ===== */
+        .plate-input { width: 70%; padding: 12px; border-radius: 50px; border: none; background: #000; color: white; text-transform: uppercase; }
+        .plate-item { display: flex; justify-content: space-between; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; margin-bottom: 10px;}
+        .remove-btn { background: rgba(255, 59, 48, 0.2); color: var(--red); border: none; padding: 5px 15px; border-radius: 50px; cursor: pointer; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border-bottom: 1px solid #333; padding: 10px; text-align: left; font-size: 0.9rem;}
+        .btn-small { padding: 5px 10px; background: #333; color: white; border: none; border-radius: 5px; cursor: pointer;}
+
+        /* SWIPEABLE ADMIN MENU */
+        .admin-nav { display: flex; justify-content: center; border-bottom: 2px solid #333; margin-bottom: 20px;}
+        .admin-nav div { flex: 1; text-align: center; padding: 15px; color: var(--text-muted); font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .admin-nav div.active { color: var(--accent); border-bottom: 3px solid var(--accent); }
+        
+        .swipe-container { display: flex; width: 200%; transition: transform 0.3s ease-out; }
+        .swipe-section { width: 50%; padding: 0 10px; box-sizing: border-box; }
+
+        /* MODALS */
+        .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center;}
+        .modal-box { background: #1a1a1a; padding: 30px; border-radius: 20px; width: 90%; max-width: 350px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        .modal-input { width: 90%; padding: 12px; margin: 10px 0; background: #000; color: white; border: 1px solid #333; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <button class="menu-btn" onclick="toggleSidebar()">
+            <svg viewBox="0 0 24 24" stroke="white" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+        Dashboard
+    </div>
+
+    <div id="mySidebar" class="sidebar">
+        <button class="close-btn" onclick="toggleSidebar()">&times;</button>
+        <a id="nav-camera" class="active" onclick="switchTab('cameraTab', 'nav-camera')">Live Camera</a>
+        <a id="nav-map" onclick="switchTab('mapTab', 'nav-map')">Parking Map</a>
+        
+        {% if role == 'admin' %}
+        <a id="nav-admin" onclick="switchTab('adminTab', 'nav-admin')">Admin</a>
+        {% endif %}
+        
+        <a href="/logout" style="color: var(--red); margin-top: 30px;">Logout</a>
+    </div>
+
+    <div class="content">
+        
+        <!-- ======== CAMERA TAB (unchanged) ======== -->
+        <div id="cameraTab" class="tab-content active-tab">
+            <div class="dashboard-card">
+                <div class="info-group">
+                    <div class="info-row">Scanned Plate: <span id="val-plate" class="status-yellow">Scanning...</span></div>
+                    <div class="info-row">Gate Status: <span id="val-gate" class="status-red">CLOSED</span></div>
+                </div>
+                {% if role == 'admin' %}
+                <button class="gate-btn" onclick="triggerManualGate()" id="gateButton">Open Gate</button>
+                {% endif %}
+            </div>
+            <div class="video-wrapper">
+                <img src="{{ url_for('video_feed') }}" alt="Live Feed">
+            </div>
+        </div>
+
+        <!-- ======== PARKING MAP TAB ======== -->
+        <div id="mapTab" class="tab-content">
+            <div class="parking-lot-wrapper">
+
+                <div class="map-header">
+                    <h2>Parking Map</h2>
+                    <div class="map-legend">
+                        <div class="legend-item"><div class="legend-dot free"></div>Free</div>
+                        <div class="legend-item"><div class="legend-dot reserved"></div>Reserved</div>
+                        <div class="legend-item"><div class="legend-dot occupied"></div>Full</div>
+                    </div>
+                </div>
+
+                <div class="parking-lot-outer">
+                    <div class="parking-lot">
+
+                        <!-- ── CAMERA CELL (top-left, to the left of P4) ── -->
+                        <div class="left-cell cam-cell">
+                            <div class="cam-icon" onclick="switchTab('cameraTab', 'nav-camera')" title="View Live Camera">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="#ff5e00" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M23 7l-7 5 7 5V7z"></path>
+                                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                                </svg>
+                                <span class="cam-label">Camera</span>
+                            </div>
+                        </div>
+
+                        <!-- ── TOP SPOTS: P4 P5 P6 ── -->
+                        <div class="top-spots-zone">
+                            <div id="spot-4" class="pspot free" onclick="openReservation(4)">
+                                <div class="spot-label">P4</div>
+                                <div class="spot-status" id="status-4">FREE</div>
+                            </div>
+                            <div id="spot-5" class="pspot free" onclick="openReservation(5)">
+                                <div class="spot-label">P5</div>
+                                <div class="spot-status" id="status-5">FREE</div>
+                            </div>
+                            <div id="spot-6" class="pspot free" onclick="openReservation(6)">
+                                <div class="spot-label">P6</div>
+                                <div class="spot-status" id="status-6">FREE</div>
+                            </div>
+                        </div>
+
+                        <!-- ── ROAD LANE (full width, spans all 4 columns) ── -->
+                        <div class="road-lane"></div>
+
+                        <!-- ── GATE CELL (bottom-left, to the left of P1) ── -->
+                        <div class="left-cell gate-cell">
+                            <div class="gate-inner {% if role == 'admin' %}admin-gate{% endif %}"
+                                 id="gateVisual"
+                                 {% if role == 'admin' %}onclick="triggerManualGateMap()"{% endif %}
+                                 title="{% if role == 'admin' %}Click to open/close gate{% endif %}">
+                                <div class="gate-status-badge closed" id="gateBadge">CLOSED</div>
+                                <div class="gate-post-wrap">
+                                    <div class="gate-post"></div>
+                                    <div class="gate-bar-wrap" id="gateBarWrap">
+                                        <div class="gate-bar"></div>
+                                    </div>
+                                </div>
+                                <div class="gate-text-label">Gate</div>
+                            </div>
+                        </div>
+
+                        <!-- ── BOTTOM SPOTS: P1 P2 P3 ── -->
+                        <div class="bottom-spots-zone">
+                            <div id="spot-1" class="pspot free" onclick="openReservation(1)">
+                                <div class="spot-label">P1</div>
+                                <div class="spot-status" id="status-1">FREE</div>
+                            </div>
+                            <div id="spot-2" class="pspot free" onclick="openReservation(2)">
+                                <div class="spot-label">P2</div>
+                                <div class="spot-status" id="status-2">FREE</div>
+                            </div>
+                            <div id="spot-3" class="pspot free" onclick="openReservation(3)">
+                                <div class="spot-label">P3</div>
+                                <div class="spot-status" id="status-3">FREE</div>
+                            </div>
+                        </div>
+
+                    </div><!-- /.parking-lot -->
+                </div><!-- /.parking-lot-outer -->
+            </div><!-- /.parking-lot-wrapper -->
+        </div>
+        
+        <!-- ======== ADMIN TAB ======== -->
+        {% if role == 'admin' %}
+        <div id="adminTab" class="tab-content">
+            <div class="dashboard-card" style="padding: 10px; display: block; overflow: hidden;">
+                
+                <div class="admin-nav">
+                    <div id="nav-plates" class="active" onclick="slideAdmin(0)">Manage Plates</div>
+                    <div id="nav-users" onclick="slideAdmin(1)">Manage Users</div>
+                </div>
+
+                <div class="swipe-container" id="swipeArea">
+                    <div class="swipe-section">
+                        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                            <input type="text" id="newPlateInput" class="plate-input" placeholder="e.g. ABC">
+                            <button class="gate-btn" style="margin: 0; width: auto;" onclick="addPlate()">Add</button>
+                        </div>
+                        <div id="platesList"></div>
+                    </div>
+
+                    <div class="swipe-section">
+                        <table>
+                            <tr><th>Email</th><th>Role</th><th>Action</th></tr>
+                            {% for u in users %}
+                            <tr>
+                                <td>{{ u.email.split('@')[0] }}</td>
+                                <td style="color: {% if u.role=='admin' %}#00e676{% else %}#a0a0a0{% endif %}">{{ u.role }}</td>
+                                <td>
+                                    {% if u.id != current_user.id %}
+                                    <button class="btn-small" onclick="toggleUserRole({{ u.id }})">Swap</button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <!-- Reservation Modal -->
+    <div id="resModal" class="modal-overlay">
+        <div class="modal-box">
+            <h2 style="margin-top:0;">Reserve Spot P<span id="resSpotNum"></span></h2>
+            <label style="color:#a0a0a0; font-size: 0.9rem; text-align:left; display:block;">Arrival Time</label>
+            <input type="time" id="resArrive" class="modal-input">
+            
+            <label style="color:#a0a0a0; font-size: 0.9rem; text-align:left; display:block;">Leave Time</label>
+            <input type="time" id="resLeave" class="modal-input">
+            
+            <input type="text" id="resPlate" class="modal-input" placeholder="Your License Plate" style="text-transform: uppercase;">
+            
+            <button class="gate-btn" onclick="submitReservation()">Confirm Reservation</button>
+            <button class="gate-btn" style="background: #333; margin-top:10px;" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        const userRole = "{{ role }}"; 
+        let sidebarOpen = false;
+
+        function toggleSidebar() {
+            document.getElementById("mySidebar").style.width = sidebarOpen ? "0" : "280px";
+            sidebarOpen = !sidebarOpen;
+        }
+
+        function switchTab(tabId, navId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active-tab'));
+            document.querySelectorAll('.sidebar a').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active-tab');
+            document.getElementById(navId).classList.add('active');
+            
+            if (tabId === 'adminTab') fetchPlates();
+            if (sidebarOpen) toggleSidebar();
+        }
+
+        // --- ADMIN SWIPE LOGIC ---
+        let currentSlide = 0;
+        const swipeArea = document.getElementById('swipeArea');
+        
+        function slideAdmin(index) {
+            currentSlide = index;
+            document.getElementById('nav-plates').classList.toggle('active', index === 0);
+            document.getElementById('nav-users').classList.toggle('active', index === 1);
+            swipeArea.style.transform = `translateX(-${index * 50}%)`;
+        }
+
+        if(swipeArea) {
+            let touchStartX = 0;
+            swipeArea.addEventListener('touchstart', e => touchStartX = e.changedTouches[0].screenX);
+            swipeArea.addEventListener('touchend', e => {
+                let touchEndX = e.changedTouches[0].screenX;
+                if (touchStartX - touchEndX > 50) slideAdmin(1);
+                if (touchEndX - touchStartX > 50) slideAdmin(0);
+            });
+        }
+
+        // --- RESERVATION MODAL ---
+        let selectedSpot = 0;
+        function openReservation(spotNum) {
+            const spotEl = document.getElementById('spot-' + spotNum);
+            if (!spotEl.classList.contains('free')) return; 
+
+            selectedSpot = spotNum;
+            document.getElementById('resSpotNum').innerText = spotNum;
+            document.getElementById('resModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('resModal').style.display = 'none';
+        }
+
+        function submitReservation() {
+            let arrive = document.getElementById('resArrive').value;
+            let leave  = document.getElementById('resLeave').value;
+            let plate  = document.getElementById('resPlate').value.toUpperCase();
+
+            if(!arrive || !leave || !plate) { alert("Please fill all fields!"); return; }
+
+            fetch('/api/reserve', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ spot: selectedSpot, arrive: arrive, leave: leave, plate: plate })
+            }).then(() => {
+                alert("Spot P" + selectedSpot + " reserved for plate " + plate + "!");
+                closeModal();
+            });
+        }
+
+        // --- GATE CONTROLS ---
+        function triggerManualGate() {
+            let btn = document.getElementById("gateButton");
+            btn.innerText = "Opening..."; btn.disabled = true;
+            fetch('/toggle_gate', { method: 'POST' }).then(() => {
+                setTimeout(() => { btn.innerText = "Open Gate"; btn.disabled = false; }, 3000);
+            });
+        }
+
+        function triggerManualGateMap() {
+            if (userRole !== 'admin') return;
+            fetch('/toggle_gate', { method: 'POST' });
+        }
+
+        // --- UPDATE GATE VISUAL ---
+        function updateGateVisual(isOpen) {
+            const barWrap = document.getElementById('gateBarWrap');
+            const badge   = document.getElementById('gateBadge');
+            if (!barWrap || !badge) return;
+
+            if (isOpen) {
+                barWrap.classList.add('open');
+                badge.textContent  = 'OPEN';
+                badge.className    = 'gate-status-badge open';
+            } else {
+                barWrap.classList.remove('open');
+                badge.textContent  = 'CLOSED';
+                badge.className    = 'gate-status-badge closed';
+            }
+        }
+
+        // --- FETCH PLATES ---
+        function fetchPlates() {
+            if (userRole !== 'admin') return;
+            fetch('/api/plates').then(r => r.json()).then(data => {
+                document.getElementById('platesList').innerHTML = data.plates.map(p => `
+                    <div class="plate-item">
+                        <strong>${p}</strong>
+                        <button class="remove-btn" onclick="removePlate('${p}')">Remove</button>
+                    </div>`).join('');
+            });
+        }
+
+        function addPlate() {
+            let plateVal = document.getElementById('newPlateInput').value.toUpperCase().trim();
+            if(!plateVal) return;
+            fetch('/api/add_plate', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({plate: plateVal}) })
+            .then(() => { document.getElementById('newPlateInput').value = ''; fetchPlates(); });
+        }
+
+        function removePlate(plateVal) {
+            fetch('/api/remove_plate', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({plate: plateVal}) })
+            .then(() => fetchPlates());
+        }
+
+        function toggleUserRole(userId) {
+            fetch('/api/toggle_role/' + userId, { method: 'POST' }).then(() => location.reload());
+        }
+
+        // --- LIVE STATUS POLLING ---
+        function fetchLiveStatus() {
+            fetch('/api/status').then(r => r.json()).then(data => {
+                // Update camera tab status
+                document.getElementById('val-plate').innerText = data.plate;
+                let gateEl = document.getElementById('val-gate');
+                gateEl.innerText = data.gate;
+                gateEl.className = data.gate === 'OPEN' ? 'status-green' : 'status-red';
+
+                // Update gate visual in map
+                updateGateVisual(data.gate === 'OPEN');
+
+                // Update each parking spot: sensor(0)=occupied(red), reserved(r)=gray, free(1)=green
+                for (let i = 1; i <= 6; i++) {
+                    const spotEl   = document.getElementById('spot-' + i);
+                    const statusEl = document.getElementById('status-' + i);
+                    const sensorFree = data['s' + i] === 1;   // 1 = no car (PUD_UP)
+                    const isReserved = data['r' + i] === true;
+
+                    if (!sensorFree) {
+                        // Car physically present → RED
+                        spotEl.className = 'pspot occupied';
+                        spotEl.onclick   = null;
+                        if (statusEl) statusEl.textContent = 'FULL';
+                    } else if (isReserved) {
+                        // Spot reserved → GRAY
+                        spotEl.className = 'pspot reserved';
+                        spotEl.onclick   = null;
+                        if (statusEl) statusEl.textContent = 'RESERVED';
+                    } else {
+                        // Free → GREEN
+                        spotEl.className = 'pspot free';
+                        spotEl.onclick   = () => openReservation(i);
+                        if (statusEl) statusEl.textContent = 'FREE';
+                    }
+                }
+            });
+        }
+
+        setInterval(fetchLiveStatus, 1000);
+        fetchLiveStatus();
+        if (userRole === 'admin') fetchPlates();
+    </script>
+</body>
+</html>
